@@ -1,0 +1,37 @@
+# ROS 2 / colcon outputs
+build/
+install/
+log/
+
+# Captured data and local working directories
+sessions/
+bags/
+recordings/
+backups/
+camera/*_frames.csv
+
+# ROS bag and camera payloads
+*.mcap
+*.db3
+*.h264
+*.h265
+*.nv12
+*.raw
+
+# Generated binaries, logs, and caches
+*.ko
+*.o
+*.mod
+*.mod.c
+*.cmd
+Module.symvers
+modules.order
+*.log
+__pycache__/
+*.py[cod]
+
+# Editor and OS files
+.idea/
+.vscode/
+*~
+.DS_Store

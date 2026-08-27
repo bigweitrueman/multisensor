@@ -1,0 +1,40 @@
+/vanjee_points722:
+  reliability: reliable
+  durability: volatile
+  history: keep_last
+  depth: 10
+/vanjee_lidar_imu_packets:
+  reliability: reliable
+  durability: volatile
+  history: keep_last
+  depth: 10
+/tf_static:
+  reliability: reliable
+  durability: transient_local
+  history: keep_last
+  depth: 1
+/imx586/cam1/header:
+  reliability: best_effort
+  durability: volatile
+  history: keep_last
+  depth: 10
+/imx586/cam2/header:
+  reliability: best_effort
+  durability: volatile
+  history: keep_last
+  depth: 10
+/imx586/cam0/header:
+  reliability: best_effort
+  durability: volatile
+  history: keep_last
+  depth: 10
+/imx586/cam3/header:
+  reliability: best_effort
+  durability: volatile
+  history: keep_last
+  depth: 10
+/imx586/cam4/header:
+  reliability: best_effort
+  durability: volatile
+  history: keep_last
+  depth: 10
