@@ -1,6 +1,6 @@
-# Atlas 多传感器同步采集
+# rk3588s 多传感器同步采集
 
-本仓库保存 Atlas RK3588 板卡上 IMX586 四路相机与万集 WLR-722 雷达的核心同步、采集和录制代码。仓库仅包含源码与配置，不包含采集数据、ROS 2 构建目录、预编译内核模块或厂商 SDK 全量源码。
+本仓库保存 rk3588s RK3588 板卡上 IMX586 四路相机与万集 WLR-722 雷达的核心同步、采集和录制代码。仓库仅包含源码与配置，不包含采集数据、ROS 2 构建目录、预编译内核模块或厂商 SDK 全量源码。
 
 ## 核心数据流
 
@@ -11,7 +11,7 @@ imx586_trigger_sync
              ↓
 UART7 伪 RMC + 同一触发 epoch
              ↓
-/tmp/atlas_joint_sync_state
+/tmp/rk3588s_joint_sync_state
              ↓
 四路 IMX586：触发计数匹配 + 曝光中心修正
   ├─ ROS Image/Header（约 10 Hz）
@@ -27,9 +27,9 @@ WLR-722 点云/IMU + 四路 Header → MCAP rosbag
 - `kernel/imx586_trigger_sync/`：GPIO54/GPIO142 同时序触发内核模块源码。
 - `sync/vanjee_pseudo_utc_sync.py`：绑定触发 epoch、生成伪 RMC、写同步状态文件。
 - `src/imx586_camera_ros2/`：四路 V4L2 采集、时间戳修正、ROS 发布和 MPP H.264 落盘。
-- `tools/load_atlas_trigger_sync.sh`：当前板卡的模块加载参数。
-- `tools/record_atlas_session.sh`：只录雷达、IMU、相机 Header 和 `/tf_static`。
-- `tools/atlas_sync_check.py`：在线同步检查。
+- `tools/load_rk3588s_trigger_sync.sh`：当前板卡的模块加载参数。
+- `tools/record_rk3588s_session.sh`：只录雷达、IMU、相机 Header 和 `/tf_static`。
+- `tools/rk3588s_sync_check.py`：在线同步检查。
 - `tools/analyze_vanjee_frames_ros2.py`：雷达帧时间与有效点分析。
 - `config/`：rosbag QoS 与 WLR-722 运行配置。
 
@@ -45,16 +45,16 @@ WLR-722 点云/IMU + 四路 Header → MCAP rosbag
 | 雷达供电 | `/sys/class/leds/lidar_12v_en/brightness` |
 | ROS 2 | Jazzy，`ROS_DOMAIN_ID=37` |
 
-GPIO 输出为 1.8 V，而雷达 PPS 接口标称为 3.3 V。量产设计必须增加 1.8 V 到 3.3 V 电平转换，禁止将 3.3 V 直接反灌 Atlas GPIO。
+GPIO 输出为 1.8 V，而雷达 PPS 接口标称为 3.3 V。量产设计必须增加 1.8 V 到 3.3 V 电平转换，禁止将 3.3 V 直接反灌 rk3588s GPIO。
 
-源码中保留了一些通用/历史默认值，部署时以 `tools/load_atlas_trigger_sync.sh` 的 `PPS_GPIO_PIN` 和 `PPS_PHASE_NS` 为准；同步程序的 `--imx586-pps-phase-ns` 必须使用同一个相位值。
+源码中保留了一些通用/历史默认值，部署时以 `tools/load_rk3588s_trigger_sync.sh` 的 `PPS_GPIO_PIN` 和 `PPS_PHASE_NS` 为准；同步程序的 `--imx586-pps-phase-ns` 必须使用同一个相位值。
 
 ## 构建
 
 安装 ROS 2 Jazzy、V4L2、Rockchip MPP 开发库以及万集 `vanjee_lidar_sdk`。厂商 SDK 未完整收录；`config/vanjee_lidar_sdk/config_722.yaml` 依赖 SDK 安装目录中的 WLR-722 标定 CSV。
 
 ```bash
-cd /userdata/atlas
+cd /userdata/rk3588s
 source /opt/ros/jazzy/setup.bash
 colcon build --symlink-install \
   --packages-select imx586_camera_ros2 vanjee_lidar_sdk \
@@ -64,7 +64,7 @@ colcon build --symlink-install \
 内核模块必须针对板卡正在运行的内核构建：
 
 ```bash
-cd /userdata/atlas/kernel/imx586_trigger_sync
+cd /userdata/rk3588s/kernel/imx586_trigger_sync
 make
 modinfo ./imx586_trigger_sync.ko
 uname -r
@@ -74,7 +74,7 @@ uname -r
 
 ## 启动顺序
 
-以下命令假设仓库部署在 `/userdata/atlas`。
+以下命令假设仓库部署在 `/userdata/rk3588s`。
 
 1. 打开雷达电源、配置网络，并停止会占用雷达资源的渲染服务：
 
@@ -88,17 +88,17 @@ uname -r
 2. 加载共同触发模块：
 
    ```bash
-   PPS_PHASE_NS=5689000 /userdata/atlas/tools/load_atlas_trigger_sync.sh
+   PPS_PHASE_NS=5689000 /userdata/rk3588s/tools/load_rk3588s_trigger_sync.sh
    ```
 
 3. 启动 WLR-722 ROS 2 驱动：
 
    ```bash
    source /opt/ros/jazzy/setup.bash
-   source /userdata/atlas/install/setup.bash
+   source /userdata/rk3588s/install/setup.bash
    export ROS_DOMAIN_ID=37 ROS_LOCALHOST_ONLY=0
    ros2 run vanjee_lidar_sdk vanjee_lidar_sdk_node --ros-args \
-     -p config_path:=/userdata/atlas/install/vanjee_lidar_sdk/share/vanjee_lidar_sdk/config/config_722.yaml
+     -p config_path:=/userdata/rk3588s/install/vanjee_lidar_sdk/share/vanjee_lidar_sdk/config/config_722.yaml
    ```
 
 4. 绑定共同 epoch，并向雷达发送伪 RMC：
@@ -106,10 +106,10 @@ uname -r
    ```bash
    PPS_PHASE_NS=5689000
    START_TIME="$(date '+%Y-%m-%dT%H:%M:%S')"
-   python3 /userdata/atlas/sync/vanjee_pseudo_utc_sync.py \
+   python3 /userdata/rk3588s/sync/vanjee_pseudo_utc_sync.py \
      --skip-pwm --serial /dev/ttyS7 --baud 9600 --talker GN \
      --start "${START_TIME}" --send-offset-ms 120 --print-every 1 \
-     --state-file /tmp/atlas_joint_sync_state \
+     --state-file /tmp/rk3588s_joint_sync_state \
      --bind-imx586-trigger --imx586-pps-phase-ns "${PPS_PHASE_NS}"
    ```
 
@@ -117,7 +117,7 @@ uname -r
 
    ```bash
    ros2 launch imx586_camera_ros2 imx586_dual_camera.launch.py \
-     state_file:=/tmp/atlas_joint_sync_state \
+     state_file:=/tmp/rk3588s_joint_sync_state \
      control_trigger_enable:=false
    ```
 
@@ -141,11 +141,11 @@ uname -r
 相机硬件与 ROS 发布约 10 Hz；外部 H.264 默认约 3 Hz。图像不写入 rosbag：
 
 ```bash
-SESSION=/userdata/atlas/sessions/atlas_$(date +%Y%m%d_%H%M%S)
+SESSION=/userdata/rk3588s/sessions/rk3588s_$(date +%Y%m%d_%H%M%S)
 mkdir -p "$SESSION/camera"
 
 ros2 launch imx586_camera_ros2 imx586_dual_camera.launch.py \
-  state_file:=/tmp/atlas_joint_sync_state \
+  state_file:=/tmp/rk3588s_joint_sync_state \
   control_trigger_enable:=false \
   image_record_dir:="$SESSION/camera" \
   image_record_codec:=h264 \
@@ -155,7 +155,7 @@ ros2 launch imx586_camera_ros2 imx586_dual_camera.launch.py \
 相机稳定后，在另一终端运行：
 
 ```bash
-/userdata/atlas/tools/record_atlas_session.sh \
+/userdata/rk3588s/tools/record_rk3588s_session.sh \
   --duration 600 --output "$SESSION"
 ```
 
@@ -164,7 +164,7 @@ MCAP 只包含 `/vanjee_points722`、`/vanjee_lidar_imu_packets`、四路可用�
 ## 验证
 
 ```bash
-python3 /userdata/atlas/tools/atlas_sync_check.py --duration 60
+python3 /userdata/rk3588s/tools/rk3588s_sync_check.py --duration 60
 ros2 bag info "$SESSION/radar_imu_headers"
 cat "$SESSION/topics.txt"
 cat "$SESSION/manifest.txt"
